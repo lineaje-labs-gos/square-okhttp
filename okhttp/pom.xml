@@ -1,12 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <parent>
     <groupId>com.squareup.okhttp</groupId>
     <artifactId>parent</artifactId>
     <version>2.7.5</version>
   </parent>
+
   <artifactId>okhttp</artifactId>
+  <version>2.7.5-lineaje-01</version>
   <name>OkHttp</name>
+
   <dependencies>
     <dependency>
       <groupId>com.squareup.okio</groupId>
@@ -17,7 +23,13 @@
       <artifactId>android</artifactId>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-vfs2</artifactId>
+      <version>2.10.0</version>
+    </dependency>
   </dependencies>
+
   <build>
     <plugins>
       <plugin>
@@ -42,39 +54,6 @@
           </links>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-gpg-plugin</artifactId>
-        <version>3.2.4</version>
-        <executions>
-          <execution>
-            <id>sign-artifacts</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>sign</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <gpgArguments>
-            <arg>--pinentry-mode</arg>
-            <arg>loopback</arg>
-          </gpgArguments>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
-  <scm>
-    <connection>scm:git:square-okhttp</connection>
-    <developerConnection>scm:git:square-okhttp</developerConnection>
-    <url>square-okhttp</url>
-    <tag>2.7.5-lineaje-01</tag>
-  </scm>
-  <version>2.7.5-lineaje-01</version>
-  <contributors>
-    <contributor>
-      <name>Lineaje DepFixer</name>
-      <email>221268890+Lineaje-DepFixer@users.noreply.github.com</email>
-    </contributor>
-  </contributors>
 </project>
