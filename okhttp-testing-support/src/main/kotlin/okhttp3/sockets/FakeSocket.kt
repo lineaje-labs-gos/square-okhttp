@@ -18,12 +18,15 @@
 package okhttp3.sockets
 
 import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.SocketAddress
 import java.net.SocketException
 import java.net.SocketOption
 import java.util.concurrent.atomic.AtomicReference
+import okhttp3.sockets.FakeSslSocket.HandshakeState
 import okio.Buffer
 import okio.Sink
 import okio.Source
@@ -38,8 +41,8 @@ internal class FakeSocket(
   val network: FakeNetwork,
   initialState: State = State.New,
 ) : Socket() {
-  private val atomicState = AtomicReference<State>(initialState)
-  private val state: State
+  internal val atomicState = AtomicReference<State>(initialState)
+  internal val state: State
     get() = atomicState.get()
 
   private var socketReadTimeoutMillis: Long = 0
@@ -186,6 +189,7 @@ internal class FakeSocket(
         is State.Connected -> {
           previous.inputStream.close()
           previous.outputStream.close()
+          previous.connection.close()
         }
 
         is State.Closed -> {
@@ -255,6 +259,11 @@ internal class FakeSocket(
 
   override fun toString() = "FakeSocket"
 
+  /**
+   * This represents the lifecycle state of the TCP socket, which includes a nested lifecycle for
+   * the TLS handshake. Tracking the TLS lifecycle here is a layering violation, but it lets us
+   * easily keep a single atomic state for both layers.
+   */
   sealed interface State {
     val localAddress: InetSocketAddress?
       get() = null
@@ -268,6 +277,8 @@ internal class FakeSocket(
       get() = false
     val outputShutdown: Boolean
       get() = false
+    val handshakeState: HandshakeState
+      get() = HandshakeState.New
 
     object New : State
 
@@ -279,12 +290,12 @@ internal class FakeSocket(
       val connection: FakeConnection,
       override val localAddress: InetSocketAddress,
       override val remoteAddress: InetSocketAddress,
+      override val handshakeState: HandshakeState = HandshakeState.New,
       val source: SocketSource,
       val sink: SocketSink,
+      val inputStream: InputStream = source.buffer().inputStream(),
+      val outputStream: OutputStream = sink.buffer().outputStream(),
     ) : State {
-      val inputStream = source.buffer().inputStream()
-      val outputStream = sink.buffer().outputStream()
-
       override val bound: Boolean
         get() = true
       override val connected: Boolean
@@ -293,18 +304,47 @@ internal class FakeSocket(
         get() = source.delegate == null
       override val outputShutdown: Boolean
         get() = sink.delegate == null
+
+      /** Note that this yields a new [inputStream] and [outputStream]. */
+      fun withHandshakeSuccess(
+        handshakeState: HandshakeState.Success,
+        source: SocketSource,
+        sink: SocketSink,
+      ) = Connected(
+        connection = connection,
+        localAddress = localAddress,
+        remoteAddress = remoteAddress,
+        handshakeState = handshakeState,
+        source = source,
+        sink = sink,
+      )
+
+      /** Note that this retains the previous [inputStream] and [outputStream]. */
+      fun withHandshakeState(handshakeState: HandshakeState) =
+        Connected(
+          connection = connection,
+          localAddress = localAddress,
+          remoteAddress = remoteAddress,
+          handshakeState = handshakeState,
+          source = source,
+          sink = sink,
+          inputStream = inputStream,
+          outputStream = outputStream,
+        )
     }
 
     /** A closed socket remembers what happened before it was closed. */
     class Closed(
       override val localAddress: InetSocketAddress?,
       override val remoteAddress: InetSocketAddress?,
+      override val handshakeState: HandshakeState,
       override val bound: Boolean,
       override val connected: Boolean,
     ) : State {
       constructor(previous: State) : this(
         localAddress = previous.localAddress,
         remoteAddress = previous.remoteAddress,
+        handshakeState = previous.handshakeState,
         bound = previous.bound,
         connected = previous.connected,
       )

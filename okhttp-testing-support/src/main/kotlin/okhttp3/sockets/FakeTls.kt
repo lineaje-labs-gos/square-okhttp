@@ -69,7 +69,7 @@ class FakeTls(
 
       override fun createSocket(
         socket: Socket,
-        host: String,
+        host: String?,
         port: Int,
         autoClose: Boolean,
       ): FakeSslSocket {
@@ -84,12 +84,12 @@ class FakeTls(
       }
 
       override fun createSocket(
-        host: String,
+        host: String?,
         port: Int,
       ) = error("unsupported")
 
       override fun createSocket(
-        host: String,
+        host: String?,
         port: Int,
         localHost: InetAddress,
         localPort: Int,
@@ -103,7 +103,7 @@ class FakeTls(
       override fun createSocket(
         address: InetAddress,
         port: Int,
-        localAddress: InetAddress,
+        localAddress: InetAddress?,
         localPort: Int,
       ) = error("unsupported")
     }

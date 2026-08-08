@@ -18,13 +18,14 @@
 package okhttp3.sockets
 
 import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.net.SocketException
 import java.net.SocketOption
 import java.nio.channels.SocketChannel
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
 import java.util.function.BiFunction
 import javax.net.ssl.HandshakeCompletedListener
 import javax.net.ssl.SSLParameters
@@ -37,13 +38,13 @@ import okhttp3.Protocol
 import okhttp3.TlsVersion
 import okio.ByteString
 import okio.Timeout
-import okio.buffer
 
 /**
  * The TLS layer on top of socket.
  *
  * The [java.net.Socket] API uses inheritance rather than composition for TLS, but this uses
- * composition, and delegates socket methods to its underlying [FakeSocket].
+ * composition, and delegates socket methods to its underlying [FakeSocket]. It also relies on that
+ * class to hold the state of the TLS handshake.
  */
 internal class FakeSslSocket(
   val tls: FakeTls,
@@ -52,10 +53,6 @@ internal class FakeSslSocket(
   tlsVersions: List<TlsVersion>,
   cipherSuites: List<CipherSuite>,
 ) : SSLSocket() {
-  private val atomicState = AtomicReference<State>(State.New)
-  private val state: State
-    get() = atomicState.get()
-
   private var sslParameters =
     SSLParameters().apply {
       this.protocols = tlsVersions.map { it.javaName }.toTypedArray()
@@ -151,12 +148,18 @@ internal class FakeSslSocket(
         }
       }
 
-    if (state == State.New) {
+    val previous = socket.state
+    if (previous.handshakeState == HandshakeState.New) {
       val connection =
-        socket.connection
+        (previous as? FakeSocket.State.Connected)?.connection
           ?: throw SocketException("not connected")
 
-      if (!atomicState.compareAndSet(State.New, State.Handshaking)) {
+      val handshaking =
+        previous.withHandshakeState(
+          handshakeState = HandshakeState.Handshaking,
+        )
+
+      if (!socket.atomicState.compareAndSet(previous, handshaking)) {
         throw SocketException("not ready")
       }
 
@@ -171,115 +174,97 @@ internal class FakeSslSocket(
           when (inputs) {
             is Handshaker.ClientInputs -> {
               val result = connection.handshake(tls.handshaker, inputs, handshakeTimeout)
-              State.SecurelyConnected(
+              previous.withHandshakeSuccess(
                 source = SocketSource(result.clientSocket.source),
                 sink = SocketSink(result.clientSocket.sink),
-                session =
-                  FakeSslSession(
-                    peerAddress = remoteSocketAddress,
-                    handshake = result.clientHandshake,
-                    selectedProtocol = result.selectedProtocol,
+                handshakeState =
+                  HandshakeState.Success(
+                    session =
+                      FakeSslSession(
+                        peerAddress = remoteSocketAddress,
+                        handshake = result.clientHandshake,
+                        selectedProtocol = result.selectedProtocol,
+                      ),
                   ),
               )
             }
 
             is Handshaker.ServerInputs -> {
               val result = connection.handshake(inputs, handshakeTimeout)
-              State.SecurelyConnected(
+              previous.withHandshakeSuccess(
                 source = SocketSource(result.serverSocket.source),
                 sink = SocketSink(result.serverSocket.sink),
-                session =
-                  FakeSslSession(
-                    peerAddress = remoteSocketAddress,
-                    handshake = result.serverHandshake,
-                    selectedProtocol = result.selectedProtocol,
+                handshakeState =
+                  HandshakeState.Success(
+                    session =
+                      FakeSslSession(
+                        peerAddress = remoteSocketAddress,
+                        handshake = result.serverHandshake,
+                        selectedProtocol = result.selectedProtocol,
+                      ),
                   ),
               )
             }
           }
         } catch (e: IOException) {
-          State.HandshakeFailed(
-            exception = e,
-            session = FakeSslSession(),
+          previous.withHandshakeState(
+            handshakeState =
+              HandshakeState.Failed(
+                exception = e,
+                session = FakeSslSession(),
+              ),
           )
         }
 
       // If the state changed while we were connecting, the other state wins.
-      atomicState.compareAndSet(State.Handshaking, next)
+      socket.atomicState.compareAndSet(handshaking, next)
     }
 
-    return when (val state = state) {
-      is State.HandshakeFailed -> throw state.exception
-      else -> state.session ?: error("unexpected state")
+    val state = socket.state
+    if (state is FakeSocket.State.Closed) throw SocketException("closed")
+
+    return when (val handshakeState = state.handshakeState) {
+      is HandshakeState.Failed -> throw handshakeState.exception
+      else -> handshakeState.session ?: error("unexpected state")
     }
   }
 
   override fun getApplicationProtocol(): String? {
-    val session = state.session ?: return null
+    val session = socket.state.handshakeState.session ?: return null
     return session.selectedProtocol?.toString() ?: ""
   }
 
-  override fun getInputStream() =
-    (state as? State.SecurelyConnected)?.inputStream
-      ?: throw IOException("not connected")
-
-  override fun getOutputStream() =
-    (state as? State.SecurelyConnected)?.outputStream
-      ?: throw IOException("not connected")
-
-  override fun isInputShutdown() = state.inputShutdown
-
-  override fun shutdownInput() {
-    while (true) {
-      val previous = state
-      if (previous !is State.SecurelyConnected) throw SocketException("cannot shutdown input")
-
-      if (previous.outputShutdown) {
-        val next = State.Closed(previous)
-        if (!atomicState.compareAndSet(previous, next)) continue // Lost a race, retry.
-      }
-
-      previous.inputStream.close()
-      if (previous.outputShutdown) socket.close()
-      break
-    }
+  override fun getInputStream(): InputStream {
+    val state = socket.state
+    if (state !is FakeSocket.State.Connected) throw IOException("not connected")
+    if (state.handshakeState.session == null) throw IOException("no handshake")
+    return state.inputStream
   }
 
-  override fun isOutputShutdown() = state.outputShutdown
+  override fun getOutputStream(): OutputStream {
+    val state = socket.state
+    if (state !is FakeSocket.State.Connected) throw IOException("not connected")
+    if (state.handshakeState.session == null) throw IOException("no handshake")
+    return state.outputStream
+  }
+
+  override fun isInputShutdown() = socket.isInputShutdown()
+
+  override fun shutdownInput() {
+    socket.shutdownInput()
+  }
+
+  override fun isOutputShutdown() = socket.isOutputShutdown
 
   override fun shutdownOutput() {
-    while (true) {
-      val previous = state
-      if (previous !is State.SecurelyConnected) throw SocketException("cannot shutdown output")
-
-      if (previous.inputShutdown) {
-        val next = State.Closed(previous)
-        if (!atomicState.compareAndSet(previous, next)) continue // Lost a race, retry.
-      }
-
-      previous.outputStream.close()
-      if (previous.inputShutdown) socket.close()
-      break
-    }
+    socket.shutdownOutput()
   }
 
   override fun close() {
-    while (true) {
-      val previous = state
-      val next = State.Closed(previous)
-
-      if (!atomicState.compareAndSet(previous, next)) continue // Lost a race, retry.
-
-      if (previous is State.SecurelyConnected) {
-        previous.inputStream.close()
-        previous.outputStream.close()
-      }
-      socket.close()
-      break
-    }
+    socket.close()
   }
 
-  override fun isClosed() = state is State.Closed
+  override fun isClosed() = socket.isClosed
 
   override fun getLocalSocketAddress() = socket.localSocketAddress
 
@@ -402,53 +387,22 @@ internal class FakeSslSocket(
 
   override fun toString() = "FakeSslSocket"
 
-  private sealed interface State {
-    val handshakerResult: Handshaker.Result?
-      get() = null
-    val inputShutdown: Boolean
-      get() = false
-    val outputShutdown: Boolean
-      get() = false
+  internal sealed interface HandshakeState {
     val session: FakeSslSession?
       get() = null
 
-    object New : State
+    object New : HandshakeState
 
-    object Handshaking : State
+    object Handshaking : HandshakeState
 
-    data class SecurelyConnected(
+    data class Success(
       override val session: FakeSslSession,
-      val source: SocketSource,
-      val sink: SocketSink,
-    ) : State {
-      val inputStream = source.buffer().inputStream()
-      val outputStream = sink.buffer().outputStream()
+    ) : HandshakeState
 
-      override val inputShutdown: Boolean
-        get() = source.delegate == null
-      override val outputShutdown: Boolean
-        get() = sink.delegate == null
-    }
-
-    class HandshakeFailed(
+    class Failed(
       val exception: IOException,
       override val session: FakeSslSession,
-    ) : State
-
-    class Closed(
-      override val handshakerResult: Handshaker.Result?,
-      override val session: FakeSslSession,
-    ) : State {
-      constructor(previous: State) : this(
-        handshakerResult = previous.handshakerResult,
-        session = previous.session ?: FakeSslSession(),
-      )
-
-      override val inputShutdown: Boolean
-        get() = true
-      override val outputShutdown: Boolean
-        get() = true
-    }
+    ) : HandshakeState
   }
 
   /**
@@ -457,7 +411,7 @@ internal class FakeSslSocket(
    * It's particularly awkward to use because it returns dummy values when used without an actual
    * TLS handshake.
    */
-  private class FakeSslSession(
+  internal class FakeSslSession(
     val peerAddress: InetSocketAddress? = null,
     val handshake: Handshake? = null,
     val selectedProtocol: Protocol? = null,
