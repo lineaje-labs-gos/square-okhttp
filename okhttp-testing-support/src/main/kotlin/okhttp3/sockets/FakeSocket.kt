@@ -44,6 +44,9 @@ internal class FakeSocket(
 
   private var socketReadTimeoutMillis: Long = 0
 
+  val connection: FakeConnection?
+    get() = (state as? State.Connected)?.connection
+
   override fun getInputStream() =
     (state as? State.Connected)?.inputStream
       ?: throw IOException("not connected")
@@ -113,6 +116,7 @@ internal class FakeSocket(
 
       val next =
         State.Connected(
+          connection = connection,
           localAddress = attempt.clientAddress,
           remoteAddress = attempt.serverAddress,
           source = SocketSource(connection.clientSocket.source),
@@ -141,6 +145,7 @@ internal class FakeSocket(
       }
 
       previous.inputStream.close()
+      if (previous.outputShutdown) previous.connection.close()
       break
     }
   }
@@ -158,6 +163,7 @@ internal class FakeSocket(
       }
 
       previous.outputStream.close()
+      if (previous.inputShutdown) previous.connection.close()
       break
     }
   }
@@ -173,13 +179,13 @@ internal class FakeSocket(
         State.New -> {
         }
 
+        is State.Connecting -> {
+          previous.attempt.cancel(SocketException("client closed"))
+        }
+
         is State.Connected -> {
           previous.inputStream.close()
           previous.outputStream.close()
-        }
-
-        is State.Connecting -> {
-          previous.attempt.cancel(SocketException("client closed"))
         }
 
         is State.Closed -> {
@@ -270,6 +276,7 @@ internal class FakeSocket(
     ) : State
 
     class Connected(
+      val connection: FakeConnection,
       override val localAddress: InetSocketAddress,
       override val remoteAddress: InetSocketAddress,
       val source: SocketSource,
@@ -315,7 +322,8 @@ internal class SocketSource(
 ) : Source {
   private val timeout = delegate.timeout()
 
-  @Volatile var delegate: Source? = delegate
+  @Volatile
+  var delegate: Source? = delegate
     private set
 
   override fun read(
@@ -339,7 +347,8 @@ internal class SocketSink(
 ) : Sink {
   private val timeout = delegate.timeout()
 
-  @Volatile var delegate: Sink? = delegate
+  @Volatile
+  var delegate: Sink? = delegate
     private set
 
   override fun write(
