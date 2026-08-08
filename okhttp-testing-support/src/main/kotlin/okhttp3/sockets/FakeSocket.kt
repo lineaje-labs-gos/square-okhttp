@@ -28,7 +28,9 @@ import java.net.SocketOption
 import java.util.concurrent.atomic.AtomicReference
 import okhttp3.sockets.FakeSslSocket.HandshakeState
 import okio.Buffer
+import okio.Closeable
 import okio.Sink
+import okio.Socket as OkioSocket
 import okio.Source
 import okio.buffer
 
@@ -122,8 +124,7 @@ internal class FakeSocket(
           connection = connection,
           localAddress = attempt.clientAddress,
           remoteAddress = attempt.serverAddress,
-          source = SocketSource(connection.clientSocket.source),
-          sink = SocketSink(connection.clientSocket.sink),
+          socket = connection.clientSocket,
         )
 
       // If the state changed while we were connecting, the other state wins.
@@ -187,8 +188,8 @@ internal class FakeSocket(
         }
 
         is State.Connected -> {
-          previous.inputStream.close()
-          previous.outputStream.close()
+          previous.source.cancel()
+          previous.sink.cancel()
           previous.connection.close()
         }
 
@@ -291,8 +292,9 @@ internal class FakeSocket(
       override val localAddress: InetSocketAddress,
       override val remoteAddress: InetSocketAddress,
       override val handshakeState: HandshakeState = HandshakeState.New,
-      val source: SocketSource,
-      val sink: SocketSink,
+      val socket: OkioSocket,
+      val source: SocketSource = SocketSource(socket),
+      val sink: SocketSink = SocketSink(socket),
       val inputStream: InputStream = source.buffer().inputStream(),
       val outputStream: OutputStream = sink.buffer().outputStream(),
     ) : State {
@@ -301,22 +303,20 @@ internal class FakeSocket(
       override val connected: Boolean
         get() = true
       override val inputShutdown: Boolean
-        get() = source.delegate == null
+        get() = source.closed
       override val outputShutdown: Boolean
-        get() = sink.delegate == null
+        get() = sink.closed
 
       /** Note that this yields a new [inputStream] and [outputStream]. */
       fun withHandshakeSuccess(
         handshakeState: HandshakeState.Success,
-        source: SocketSource,
-        sink: SocketSink,
+        socket: OkioSocket,
       ) = Connected(
         connection = connection,
         localAddress = localAddress,
         remoteAddress = remoteAddress,
         handshakeState = handshakeState,
-        source = source,
-        sink = sink,
+        socket = socket,
       )
 
       /** Note that this retains the previous [inputStream] and [outputStream]. */
@@ -326,6 +326,7 @@ internal class FakeSocket(
           localAddress = localAddress,
           remoteAddress = remoteAddress,
           handshakeState = handshakeState,
+          socket = socket,
           source = source,
           sink = sink,
           inputStream = inputStream,
@@ -357,57 +358,100 @@ internal class FakeSocket(
   }
 }
 
+/**
+ * This wraps an `okio.Socket` and exposes it as either the source or sink of a `java.net.Socket`.
+ *
+ * It's made complicated by how [okio.inMemorySocketPair] handles asynchronous cancellation.
+ * Canceling an in-memory socket cancels both streams for both peers. In-flight operations
+ * immediately fail and all following operations throw an [IOException].
+ *
+ * To contrast, closing a [java.net.Socket] immediately fails local operations only. The peer can
+ * read the remainder of the stream until it is exhausted.
+ *
+ * Our mitigation is straightforward enough: if the [FakeSocket] is closed while a local operation
+ * is in-flight, we trigger a maximally invasive cancel. Otherwise, we do a graceful close.
+ */
+internal open class SocketStream<T : Closeable>(
+  val socket: OkioSocket,
+  val stream: T,
+) : Closeable {
+  val closed: Boolean
+    get() = state.get() == StreamState.Closed
+
+  private val state = AtomicReference(StreamState.Ready)
+
+  override fun close() {
+    val previous = state.getAndSet(StreamState.Closed)
+    if (previous != StreamState.Closed) {
+      stream.close()
+    }
+  }
+
+  /**
+   * Equivalent to [close] unless there's a local operation in-flight, in which case the entire
+   * socket is interrupted.
+   */
+  fun cancel() {
+    val previous = state.getAndSet(StreamState.Closed)
+    if (previous != StreamState.Closed) {
+      stream.close()
+    }
+    if (previous == StreamState.Blocked) {
+      socket.cancel()
+    }
+  }
+
+  protected inline fun <T> blockingOp(block: () -> T): T {
+    if (!state.compareAndSet(StreamState.Ready, StreamState.Blocked)) {
+      throw IOException("closed")
+    }
+    try {
+      return block()
+    } finally {
+      // If the state is since closed, that's okay.
+      state.compareAndSet(StreamState.Blocked, StreamState.Ready)
+    }
+  }
+
+  internal enum class StreamState {
+    Ready,
+    Blocked,
+    Closed
+  }
+}
+
 internal class SocketSource(
-  delegate: Source,
-) : Source {
-  private val timeout = delegate.timeout()
-
-  @Volatile
-  var delegate: Source? = delegate
-    private set
-
+  socket: OkioSocket,
+) : SocketStream<Source>(socket, socket.source), Source {
   override fun read(
     sink: Buffer,
     byteCount: Long,
   ): Long {
-    val delegate = this.delegate ?: throw IOException("closed")
-    return delegate.read(sink, byteCount)
+    blockingOp {
+      return stream.read(sink, byteCount)
+    }
   }
 
-  override fun timeout() = timeout
-
-  override fun close() {
-    delegate?.close()
-    delegate = null
-  }
+  override fun timeout() = stream.timeout()
 }
 
 internal class SocketSink(
-  delegate: Sink,
-) : Sink {
-  private val timeout = delegate.timeout()
-
-  @Volatile
-  var delegate: Sink? = delegate
-    private set
-
+  socket: OkioSocket,
+) : SocketStream<Sink>(socket, socket.sink), Sink {
   override fun write(
     source: Buffer,
     byteCount: Long,
   ) {
-    val delegate = this.delegate ?: throw IOException("closed")
-    delegate.write(source, byteCount)
+    blockingOp {
+      stream.write(source, byteCount)
+    }
   }
 
   override fun flush() {
-    val delegate = this.delegate ?: throw IOException("closed")
-    delegate.flush()
+    blockingOp {
+      stream.flush()
+    }
   }
 
-  override fun timeout() = timeout
-
-  override fun close() {
-    delegate?.close()
-    delegate = null
-  }
+  override fun timeout() = stream.timeout()
 }

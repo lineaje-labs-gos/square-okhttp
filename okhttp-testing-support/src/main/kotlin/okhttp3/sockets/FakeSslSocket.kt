@@ -175,8 +175,7 @@ internal class FakeSslSocket(
             is Handshaker.ClientInputs -> {
               val result = connection.handshake(tls.handshaker, inputs, handshakeTimeout)
               previous.withHandshakeSuccess(
-                source = SocketSource(result.clientSocket.source),
-                sink = SocketSink(result.clientSocket.sink),
+                socket = result.clientSocket,
                 handshakeState =
                   HandshakeState.Success(
                     session =
@@ -192,8 +191,7 @@ internal class FakeSslSocket(
             is Handshaker.ServerInputs -> {
               val result = connection.handshake(inputs, handshakeTimeout)
               previous.withHandshakeSuccess(
-                source = SocketSource(result.serverSocket.source),
-                sink = SocketSink(result.serverSocket.sink),
+                socket = result.serverSocket,
                 handshakeState =
                   HandshakeState.Success(
                     session =

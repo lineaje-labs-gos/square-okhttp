@@ -36,8 +36,7 @@ internal fun FakeNetwork.socketPair(): Array<FakeSocket> {
           connection = connection,
           localAddress = connection.clientAddress,
           remoteAddress = connection.serverAddress,
-          source = SocketSource(connection.clientSocket.source),
-          sink = SocketSink(connection.clientSocket.sink),
+          socket = connection.clientSocket,
         ),
     )
 
@@ -49,8 +48,7 @@ internal fun FakeNetwork.socketPair(): Array<FakeSocket> {
           connection = connection,
           localAddress = connection.serverAddress,
           remoteAddress = connection.clientAddress,
-          source = SocketSource(connection.serverSocket.source),
-          sink = SocketSink(connection.serverSocket.sink),
+          socket = connection.serverSocket,
         ),
     )
 

@@ -82,8 +82,7 @@ internal class FakeServerSocket(
             connection = connection,
             localAddress = connection.serverAddress,
             remoteAddress = connection.clientAddress,
-            source = SocketSource(connection.serverSocket.source),
-            sink = SocketSink(connection.serverSocket.sink),
+            socket = connection.serverSocket,
           ),
       )
 
