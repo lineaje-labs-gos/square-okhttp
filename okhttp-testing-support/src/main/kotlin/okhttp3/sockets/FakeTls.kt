@@ -30,6 +30,9 @@ import okhttp3.tls.HandshakeCertificates
  * Unlike [FakeNetwork] which is a natural singleton, we expect each peer to have their own
  * independent instances of [FakeTls]. This allows us to simulate different configurations for
  * each peer.
+ *
+ * Note that only the client's [handshaker] is used, and its result is used by both client and
+ * server.
  */
 class FakeTls(
   val handshaker: Handshaker,
