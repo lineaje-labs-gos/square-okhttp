@@ -2166,7 +2166,7 @@ just IP addresses!), asynchronous streaming results, and in-memory caching.</p>
 <span class="w">  </span><span class="p">.</span><span class="na">build</span><span class="p">()</span>
 </code></pre></div>
 <p>You could also opt in with our new <code>AndroidDns</code> API. Unfortunately, the privacy benefits of ECH are
-deficient because its DNS queries are not encrypted by default.</p>
+thwarted because its DNS queries are not encrypted by default.</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// AndroidDns fetches the HTTPS DNS resource records necessary for ECH.</span>
 <span class="kd">val</span><span class="w"> </span><span class="nv">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OkHttpClient</span><span class="p">.</span><span class="na">Builder</span><span class="p">()</span>
 <span class="w">  </span><span class="p">.</span><span class="na">dns</span><span class="p">(</span><span class="n">AndroidDns</span><span class="p">())</span>
@@ -2180,7 +2180,7 @@ deficient because its DNS queries are not encrypted by default.</p>
 <li>Fix: Closing a multipart part&rsquo;s sink no longer closes the entire request body.</li>
 <li>Fix: Flush HTTP/1 request bodies before detaching the timeout. We had a bug where timeouts
     weren’t applied correctly.</li>
-<li>Fix: Follow [RFC 1008]&rsquo;s requirements for HTTP QUERY redirects.</li>
+<li>Fix: Follow <a href="https://www.rfc-editor.org/info/rfc10008/">RFC 1008</a>&rsquo;s requirements for HTTP QUERY redirects.</li>
 <li>Fix: Fall back to no proxy when the system proxy selector throws. Previously this would cause
     the HTTP call to crash.</li>
 <li>Upgrade: <a href="https://lysine.dev/okio/changelog/#version-3181">Okio 3.18.1</a>.</li>
@@ -2370,8 +2370,8 @@ migrate.)</p>
 </tr>
 </tbody>
 </table>
-<p><strong>OkHttp now supports Happy Eyeballs (<a href="https://www.rfc-editor.org/info/rfc8305/">RFC 8305</a>) for IPv4+IPv6 networks.</strong> It attempts
-both IPv6 and IPv4 connections concurrently, keeping whichever connects first.</p>
+<p><strong>OkHttp now supports Happy Eyeballs (<a href="https://www.rfc-editor.org/info/rfc8305/">RFC 8305</a>) for IPv4+IPv6 networks.</strong> It attempts both IPv6
+and IPv4 connections concurrently, keeping whichever connects first.</p>
 <p><strong>We’ve improved our Kotlin APIs.</strong> You can skip the builder:</p>
 <div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">request</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Request</span><span class="p">(</span>
 <span class="w">  </span><span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;https://cash.app/&quot;</span><span class="p">.</span><span class="na">toHttpUrl</span><span class="p">(),</span>
@@ -2759,7 +2759,7 @@ of unacknowledged data per stream and no per-connection limit.</p>
 <p><em>2022-12-24</em></p>
 <ul>
 <li>New: Enable fast fallback by default. It&rsquo;s our implementation of Happy Eyeballs,
-    <a href="https://www.rfc-editor.org/info/rfc8305/">RFC 8305</a>. Disable with <code>OkHttpClient.Builder.fastFallback(false)</code>.</li>
+    <a href="https://www.rfc-editor.org/info/rfc8305/">RFC 8305</a>[rfc_8305]. Disable with <code>OkHttpClient.Builder.fastFallback(false)</code>.</li>
 <li>Fix: Don&rsquo;t log response bodies for server-sent events.</li>
 <li>Fix: Skip early hints (status code 103) responses.</li>
 <li>Fix: Don&rsquo;t log sensitive headers in <code>Request.toString()</code>.</li>
@@ -2883,7 +2883,7 @@ the fixes or features below, please upgrade.</p>
 <h2 id="version-500-alpha4">Version 5.0.0-alpha.4<a class="headerlink" href="#version-500-alpha4" title="Permanent link">&para;</a></h2>
 <p><em>2022-02-01</em></p>
 <p><strong>This release introduces fast fallback to better support mixed IPv4+IPv6 networks.</strong> Fast fallback
-is what we&rsquo;re calling our implementation of Happy Eyeballs, <a href="https://www.rfc-editor.org/info/rfc8305/">RFC 8305</a>. With this
+is what we&rsquo;re calling our implementation of Happy Eyeballs, <a href="https://www.rfc-editor.org/info/rfc8305/">RFC 8305</a>[rfc_8305]. With this
 feature OkHttp will attempt both IPv6 and IPv4 connections concurrently, keeping whichever connects
 first. Fast fallback gives IPv6 connections a 250 ms head start so IPv6 is preferred on networks
 where it&rsquo;s available.</p>
