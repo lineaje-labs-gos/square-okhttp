@@ -12,7 +12,7 @@
         <meta name="author" content="Square, Inc.">
       
       
-        <link rel="canonical" href="https://square.github.io/okhttp/features/connections/">
+        <link rel="canonical" href="https://lysine.dev/okhttp/features/connections/">
       
       
         <link rel="prev" href="../caching/">
@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/icon-square.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -195,7 +195,7 @@
     
     
       <div class="md-header__source">
-        <a href="https://github.com/square/okhttp" title="Go to repository" class="md-source" data-md-component="source">
+        <a href="https://github.com/lysine-dev/okhttp" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
@@ -410,7 +410,7 @@
   </label>
   
     <div class="md-nav__source">
-      <a href="https://github.com/square/okhttp" title="Go to repository" class="md-source" data-md-component="source">
+      <a href="https://github.com/lysine-dev/okhttp" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
@@ -1612,27 +1612,27 @@
 
 <h1 id="connections">Connections<a class="headerlink" href="#connections" title="Permanent link">&para;</a></h1>
 <p>Although you provide only the URL, OkHttp plans its connection to your webserver using three types: URL, Address, and Route.</p>
-<h3 id="urls"><a href="https://square.github.io/okhttp/5.x/okhttp/okhttp3/-http-url/">URLs</a><a class="headerlink" href="#urls" title="Permanent link">&para;</a></h3>
-<p>URLs (like <code>https://github.com/square/okhttp</code>) are fundamental to HTTP and the Internet. In addition to being a universal, decentralized naming scheme for everything on the web, they also specify how to access web resources.</p>
+<h3 id="urls"><a href="https://lysine.dev/okhttp/5.x/okhttp/okhttp3/-http-url/">URLs</a><a class="headerlink" href="#urls" title="Permanent link">&para;</a></h3>
+<p>URLs (like <code>https://github.com/lysine-dev/okhttp</code>) are fundamental to HTTP and the Internet. In addition to being a universal, decentralized naming scheme for everything on the web, they also specify how to access web resources.</p>
 <p>URLs are abstract:</p>
 <ul>
 <li>They specify that the call may be plaintext (<code>http</code>) or encrypted (<code>https</code>), but not which cryptographic algorithms should be used. Nor do they specify how to verify the peer&rsquo;s certificates (the <a href="https://developer.android.com/reference/javax/net/ssl/HostnameVerifier.html">HostnameVerifier</a>) or which certificates can be trusted (the <a href="https://developer.android.com/reference/org/apache/http/conn/ssl/SSLSocketFactory.html">SSLSocketFactory</a>).</li>
 <li>They don&rsquo;t specify whether a specific proxy server should be used or how to authenticate with that proxy server.</li>
 </ul>
-<p>They&rsquo;re also concrete: each URL identifies a specific path (like <code>/square/okhttp</code>) and query (like <code>?q=sharks&amp;lang=en</code>). Each webserver hosts many URLs.</p>
-<h3 id="addresses"><a href="https://square.github.io/okhttp/5.x/okhttp/okhttp3/-address/">Addresses</a><a class="headerlink" href="#addresses" title="Permanent link">&para;</a></h3>
+<p>They&rsquo;re also concrete: each URL identifies a specific path (like <code>/lysine-dev/okhttp</code>) and query (like <code>?q=sharks&amp;lang=en</code>). Each webserver hosts many URLs.</p>
+<h3 id="addresses"><a href="https://lysine.dev/okhttp/5.x/okhttp/okhttp3/-address/">Addresses</a><a class="headerlink" href="#addresses" title="Permanent link">&para;</a></h3>
 <p>Addresses specify a webserver (like <code>github.com</code>) and all of the <strong>static</strong> configuration necessary to connect to that server: the port number, HTTPS settings, and preferred network protocols (like HTTP/2).</p>
-<p>URLs that share the same address may also share the same underlying TCP socket connection. Sharing a connection has substantial performance benefits: lower latency, higher throughput (due to <a href="https://www.igvita.com/2011/10/20/faster-web-vs-tcp-slow-start/">TCP slow start</a>) and conserved battery. OkHttp uses a <a href="https://square.github.io/okhttp/5.x/okhttp/okhttp3/-connection-pool/">ConnectionPool</a> that automatically reuses HTTP/1.x connections and multiplexes HTTP/2 connections.</p>
-<p>In OkHttp some fields of the address come from the URL (scheme, hostname, port) and the rest come from the <a href="https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/">OkHttpClient</a>.</p>
-<h3 id="routes"><a href="https://square.github.io/okhttp/5.x/okhttp/okhttp3/-route/">Routes</a><a class="headerlink" href="#routes" title="Permanent link">&para;</a></h3>
+<p>URLs that share the same address may also share the same underlying TCP socket connection. Sharing a connection has substantial performance benefits: lower latency, higher throughput (due to <a href="https://www.igvita.com/2011/10/20/faster-web-vs-tcp-slow-start/">TCP slow start</a>) and conserved battery. OkHttp uses a <a href="https://lysine.dev/okhttp/5.x/okhttp/okhttp3/-connection-pool/">ConnectionPool</a> that automatically reuses HTTP/1.x connections and multiplexes HTTP/2 connections.</p>
+<p>In OkHttp some fields of the address come from the URL (scheme, hostname, port) and the rest come from the <a href="https://lysine.dev/okhttp/5.x/okhttp/okhttp3/-ok-http-client/">OkHttpClient</a>.</p>
+<h3 id="routes"><a href="https://lysine.dev/okhttp/5.x/okhttp/okhttp3/-route/">Routes</a><a class="headerlink" href="#routes" title="Permanent link">&para;</a></h3>
 <p>Routes supply the <strong>dynamic</strong> information necessary to actually connect to a webserver. This is the specific IP address to attempt (as discovered by a DNS query), the exact proxy server to use (if a <a href="https://developer.android.com/reference/java/net/ProxySelector.html">ProxySelector</a> is in use), and which version of TLS to negotiate (for HTTPS connections).</p>
 <p>There may be many routes for a single address. For example, a webserver that is hosted in multiple datacenters may yield multiple IP addresses in its DNS response.</p>
 <p>In limited situations OkHttp will retry a route if connecting fails:</p>
 <ul>
-<li>When making an HTTPS connection through an HTTP proxy, the proxy may issue an authentication challenge. OkHttp will call the proxy <a href="https://square.github.io/okhttp/5.x/okhttp/okhttp3/-authenticator/">authenticator</a> and try again.</li>
-<li>When making TLS connections with multiple <a href="https://square.github.io/okhttp/5.x/okhttp/okhttp3/-connection-spec/">connection specs</a>, these are attempted in sequence until the TLS handshake succeeds.</li>
+<li>When making an HTTPS connection through an HTTP proxy, the proxy may issue an authentication challenge. OkHttp will call the proxy <a href="https://lysine.dev/okhttp/5.x/okhttp/okhttp3/-authenticator/">authenticator</a> and try again.</li>
+<li>When making TLS connections with multiple <a href="https://lysine.dev/okhttp/5.x/okhttp/okhttp3/-connection-spec/">connection specs</a>, these are attempted in sequence until the TLS handshake succeeds.</li>
 </ul>
-<h3 id="connections_1"><a href="https://square.github.io/okhttp/5.x/okhttp/okhttp3/-connection/">Connections</a><a class="headerlink" href="#connections_1" title="Permanent link">&para;</a></h3>
+<h3 id="connections_1"><a href="https://lysine.dev/okhttp/5.x/okhttp/okhttp3/-connection/">Connections</a><a class="headerlink" href="#connections_1" title="Permanent link">&para;</a></h3>
 <p>When you request a URL with OkHttp, here&rsquo;s what it does:</p>
 <ol>
 <li>It uses the URL and configured OkHttpClient to create an <strong>address</strong>. This address specifies how we&rsquo;ll connect to the webserver.</li>
@@ -1643,7 +1643,7 @@
 </ol>
 <p>If there&rsquo;s a problem with the connection, OkHttp will select another route and try again. This allows OkHttp to recover when a subset of a server&rsquo;s addresses are unreachable. It&rsquo;s also useful when a pooled connection is stale or if the attempted TLS version is unsupported.</p>
 <p>Once the response has been received, the connection will be returned to the pool so it can be reused for a future request. Connections are evicted from the pool after a period of inactivity.</p>
-<h3 id="fast-fallback"><a href="https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/-builder/fast-fallback">Fast Fallback</a><a class="headerlink" href="#fast-fallback" title="Permanent link">&para;</a></h3>
+<h3 id="fast-fallback"><a href="https://lysine.dev/okhttp/5.x/okhttp/okhttp3/-ok-http-client/-builder/fast-fallback">Fast Fallback</a><a class="headerlink" href="#fast-fallback" title="Permanent link">&para;</a></h3>
 <p>Since version 5.0, <code>OkHttpClient</code> supports fast fallback, which is our implementation of Happy Eyeballs <a href="https://datatracker.ietf.org/doc/html/rfc6555">RFC 6555</a>.</p>
 <p>With fast fallback, OkHttp attempts to connect to multiple web servers concurrently. It keeps whichever route connects first and cancels all of the others. Its rules are:</p>
 <ul>
@@ -1709,7 +1709,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
